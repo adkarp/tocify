@@ -52,7 +52,7 @@ jobs:
           HTTPS_PROXY: ""
           ALL_PROXY: ""
           NO_PROXY: "api.openai.com"
-          MIN_SCORE_READ: "0.65"
+          MIN_SCORE_READ: "0.35"
           LOOKBACK_DAYS: "7"
           SUMMARY_MAX_CHARS: "500"
           PREFILTER_KEEP_TOP: "200"
