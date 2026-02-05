@@ -38,6 +38,13 @@ jobs:
           PY
           curl -I https://api.openai.com/v1/models --max-time 20 || true
 
+      - name: Show proxy-related env (debug)
+        run: |
+          echo "HTTP_PROXY=$HTTP_PROXY"
+          echo "HTTPS_PROXY=$HTTPS_PROXY"
+          echo "ALL_PROXY=$ALL_PROXY"
+          echo "NO_PROXY=$NO_PROXY"
+
       - name: Run digest
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
