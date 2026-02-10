@@ -4,6 +4,7 @@ on:
   schedule:
     # Mondays 08:00 America/New_York = 13:00 UTC    - cron: "00 16 * * 1"
     - cron: "00 13 * * 1"
+  workflow_dispatch:
 permissions:
   contents: write
 
