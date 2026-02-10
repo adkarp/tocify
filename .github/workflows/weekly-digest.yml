@@ -40,10 +40,6 @@ jobs:
       - name: Run digest
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          HTTP_PROXY: ""
-          HTTPS_PROXY: ""
-          ALL_PROXY: ""
-          NO_PROXY: "api.anthropic.com"
           MIN_SCORE_READ: "0.35"
           LOOKBACK_DAYS: "7"
           SUMMARY_MAX_CHARS: "500"
