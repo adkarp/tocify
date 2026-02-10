@@ -3,3 +3,4 @@ feedparser>=6.0.0
 python-dateutil>=2.9.0
 jupyter
 ipykernel
+markdown>=3.4.0

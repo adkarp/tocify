@@ -62,3 +62,14 @@ PLOS Biology | https://journals.plos.org/plosbiology/rss
 # Preprints
 bioRxiv neuroscience | https://www.biorxiv.org/rss/subject/neuroscience.xml
 ```
+
+### 6) Configure Email Digest (Optional)
+If you want to receive the digest via email, add the following secrets:
+- `SMTP_HOST`: your SMTP server (e.g., `smtp.gmail.com`)
+- `SMTP_PORT`: usually `587`
+- `SMTP_USERNAME`: your email login
+- `SMTP_PASSWORD`: your email password (or [App Password](https://support.google.com/accounts/answer/185833))
+- `DIGEST_FROM`: the "From" address
+- `DIGEST_TO`: your destination email address
+
+The email will be sent automatically after each scheduled run.
