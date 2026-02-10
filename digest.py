@@ -257,7 +257,20 @@ def triage_in_batches(client: Anthropic, interests: dict, items: list[dict], bat
             best[rid] = r
 
     ranked = sorted(best.values(), key=lambda x: x["score"], reverse=True)
-    return {"week_of": week_of, "notes": " ".join(dict.fromkeys(notes_parts))[:1000], "ranked": ranked}
+    
+    # Better deduplication: split by sentences and keep unique ones
+    all_sentences = []
+    for p in notes_parts:
+        all_sentences.extend([s.strip() for s in re.split(r'(?<=[.!?])\s+', p) if s.strip()])
+    
+    unique_notes = []
+    seen = set()
+    for s in all_sentences:
+        if s.lower() not in seen:
+            unique_notes.append(s)
+            seen.add(s.lower())
+            
+    return {"week_of": week_of, "notes": " ".join(unique_notes)[:1500], "ranked": ranked}
 
 
 # ---- render ----
@@ -269,7 +282,7 @@ def render_digest_md(result: dict, items_by_id: dict[str, dict]) -> str:
 
     lines = [f"# Weekly ToC Digest (week of {week_of})", ""]
     if notes:
-        lines += [notes, ""]
+        lines += ["> " + notes.replace("\n", "\n> "), ""]
     lines += [
         f"**Included:** {len(kept)} (score ≥ {MIN_SCORE_READ:.2f})  ",
         f"**Scored:** {len(ranked)} total items",
@@ -296,7 +309,7 @@ def render_digest_md(result: dict, items_by_id: dict[str, dict]) -> str:
             "",
         ]
         if summary:
-            lines += ["<details>", "<summary>RSS summary</summary>", "", summary, "", "</details>", ""]
+            lines += ["<details>", "<summary>RSS summary</summary>", '<div class="rss-content">', "", summary, "", "</div>", "</details>", ""]
         lines += ["---", ""]
     return "\n".join(lines)
 
