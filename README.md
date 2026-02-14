@@ -1,75 +1,77 @@
-# tocify — Weekly Journal ToC Digest (RSS → Claude → `digest.md`)
+# tocify — Weekly Journal ToC Digest
 
-This repo runs a GitHub Action once a week (or on-demand) that:
+**An AI-powered research assistant that curates a weekly digest of academic journals based on your specific interests.**
 
-1. pulls new items from a list of journal RSS feeds  
-2. uses Anthropic Claude to triage which items match your research interests  
-3. writes a ranked digest to `digest.md` and commits it back to the repo
-
-It’s meant to be forked and customized.
-
-This was almost entirely vibe-coded as an exercise (I'm pleased at how well it works!)
+This repository runs a GitHub Action once a week (or on-demand) that:
+1.  **Fetches** new items from a list of journal RSS feeds (Nature, Science, ArXiv, etc.).
+2.  **Triages** items using **Anthropic Claude** to identify papers matching your specific research interests.
+3.  **Delivers** a highly polished, responsive HTML email digest directly to your inbox.
 
 ---
 
-## What’s in this repo
+## 🌟 New Features & Enhancements
+Built upon the original vibe-coded proof-of-concept (and this was extended using vibe-coding!), this fork includes significant upgrades:
 
-- **`digest.py`** — the pipeline (fetch RSS → filter → Claude triage → render markdown)
-- **`feeds.txt`** — RSS feed list (supports comments; optionally supports `Name | URL`)
-- **`interests.md`** — your keywords + narrative seed (used for relevance)
-- **`prompt.txt`** — the prompt template (easy to tune without editing Python)
-- **`digest.md`** — generated output (auto-updated)
-- **`.github/workflows/weekly-digest.yml`** — scheduled GitHub Action runner
-- **`requirements.txt`** — Python dependencies
+### 📧 Premium Visual Email Digest
+-   **Modern "App-Like" Design**: A completely redesigned HTML template featuring a clean, slate-gray color palette and card-based layout.
+-   **Mobile-Optimized**: Responsive CSS ensures the digest looks great on phones and tablets.
+-   **Rich Typography**: Integrated **Inter** font family via Google Fonts for excellent readability.
+-   **Smart Visuals**:
+    -   **Relevance Badges**: Color-coded scores (Green/Amber/Red) to quickly highlight top papers.
+    -   **Source Pills**: Clear attribution for each journal source.
+-   **Rich Text Support**: Full markdown rendering for AI-generated summaries (bolding, lists, etc.).
+
+### ⚙️ Workflow & Data Improvements
+-   **Structured Data Export**: The pipeline now generates a `digest.json` alongside the markdown report, enabling separation of data and presentation.
+-   **Repository Hygiene**: The workflow is optimized to **email-only delivery**, keeping your git history clean by not committing weekly reports back to the repo.
+-   **Robust Error Handling**: Improved parsing for various RSS date formats and feed structures.
 
 ---
 
-## Quick start (fork + run)
+## 🚀 Setup & Usage (Fork this Repo)
 
-### 1) Fork the repo
-- Click **Fork** on GitHub to copy this repo into your account.
+### 1. Fork & Config
+Fork this repository to your own GitHub account.
 
-### 2) Enable Anthropic billing / credits
-The Anthropic API requires an active billing setup or credits.
-- Go to the [Anthropic Console](https://console.anthropic.com/) and ensure billing is enabled and/or credits are available.
-- If you see errors like `insufficient_quota`, this is the cause.
-- I recommend putting in spending limits. This uses very little compute, but it's nice to be careful.
+### 2. Environment Secrets
+Go to **Settings → Secrets and variables → Actions** and add the following repository secrets:
 
-### 3) Create an Anthropic API key
-Create an API key in the [Anthropic Console](https://console.anthropic.com/) and copy it.
+**Required for AI Triage:**
+-   `ANTHROPIC_API_KEY`: Your key from the [Anthropic Console](https://console.anthropic.com/).
 
-**Important:** never commit this key to the repo.
+**Required for Email Delivery:**
+-   `SMTP_HOST`: e.g., `smtp.gmail.com`
+-   `SMTP_PORT`: e.g., `587`
+-   `SMTP_USERNAME`: Your email address.
+-   `SMTP_PASSWORD`: Your email password (or [App Password](https://support.google.com/accounts/answer/185833)).
+-   `DIGEST_FROM`: The "From" address.
+-   `DIGEST_TO`: Where to send the digest.
 
-### 4) Add the API key as a GitHub Actions secret
-In your forked repo:
-- Go to **Settings → Secrets and variables → Actions**
-- Click **New repository secret**
-- Name: `ANTHROPIC_API_KEY`
-- Value: paste your Anthropic API key
+### 3. Customize Your Interests
+Edit `interests.md`. This is the "brain" of the operation.
+-   **Keywords**: A list of specific terms to pre-filter articles.
+-   **Narrative**: A natural language description of your research focus. Claude uses this to score relevance.
 
-That’s it—GitHub will inject it into the workflow at runtime.
-
-### 5) Configure your feeds
-Edit **`feeds.txt`**.
-
-You can use comments:
-
-```txt
-# Core journals
+### 4. Add/Remove Feeds
+Edit `feeds.txt`. Add RSS URLs, one per line. You can optionally name them:
+```text
 Nature Neuroscience | https://www.nature.com/neuro.rss
-PLOS Biology | https://journals.plos.org/plosbiology/rss
-
-# Preprints
-bioRxiv neuroscience | https://www.biorxiv.org/rss/subject/neuroscience.xml
+https://www.biorxiv.org/rss/subject/neuroscience.xml
 ```
 
-### 6) Configure Email Digest (Optional)
-If you want to receive the digest via email, add the following secrets:
-- `SMTP_HOST`: your SMTP server (e.g., `smtp.gmail.com`)
-- `SMTP_PORT`: usually `587`
-- `SMTP_USERNAME`: your email login
-- `SMTP_PASSWORD`: your email password (or [App Password](https://support.google.com/accounts/answer/185833))
-- `DIGEST_FROM`: the "From" address
-- `DIGEST_TO`: your destination email address
+---
 
-The email will be sent automatically after each scheduled run.
+## 🛠 Project Structure
+
+-   **`digest.py`**: The core engine. Fetches RSS, filters via keywords, calls Claude for scoring/summarization, and exports `digest.json`.
+-   **`email_digest.py`**: The presentation layer. Reads `digest.json` and generates the sophisticated HTML email.
+-   **`feeds.txt`**: List of RSS sources.
+-   **`interests.md`**: Configuration for the AI researcher persona.
+-   **`.github/workflows/weekly-digest.yml`**: Automation config (runs every Monday).
+
+---
+
+## Credits
+Based on the original [*tocify*](https://github.com/voytek/tocify) by [Voytek](https://github.com/voytek). 
+
+**Current Maintainer/Extensions**: [adkarp](https://github.com/adkarp)
