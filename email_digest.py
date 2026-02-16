@@ -36,7 +36,7 @@ def generate_html(data):
     raw_notes = data.get("notes", "")
     notes_html = md_to_html_snippet(raw_notes)
     
-    items = data.get("ranked", [])
+    items = [r for r in data.get("ranked", []) if r.get("score", 0) > 0.2]
 
     html_items = ""
     for item in items:
