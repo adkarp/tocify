@@ -18,6 +18,7 @@ PREFILTER_KEEP_TOP = int(os.getenv("PREFILTER_KEEP_TOP", "300"))
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "50"))
 MIN_SCORE_READ = float(os.getenv("MIN_SCORE_READ", "0.65"))
 MAX_RETURNED = int(os.getenv("MAX_RETURNED", "40"))
+MAX_TOKENS = int(os.getenv("MAX_TOKENS", "8192"))
 
 SCHEMA = {
     "type": "object",
@@ -49,12 +50,18 @@ SCHEMA = {
 
 
 # ---- tiny helpers ----
+def _strip_md_link(text: str) -> str:
+    """Extract bare URL from markdown link syntax [label](url), or return as-is."""
+    m = re.match(r'^\[.*?\]\((.*?)\)$', text.strip())
+    return m.group(1) if m else text.strip()
+
 def load_feeds(path: str) -> list[dict]:
     """
     Supports:
     - blank lines
     - comments starting with #
     - optional naming via: Name | URL
+    - markdown link syntax in the URL column: Name | [url](url)
 
     Returns list of:
     { "name": "...", "url": "..." }
@@ -75,7 +82,7 @@ def load_feeds(path: str) -> list[dict]:
 
             feeds.append({
                 "name": name,
-                "url": url
+                "url": _strip_md_link(url),
             })
 
     return feeds
@@ -147,9 +154,16 @@ def parse_date(entry) -> datetime | None:
                 pass
     return None
 
-def fetch_rss_items(feeds: list[dict]) -> list[dict]:
+def fetch_rss_items(feeds: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Returns (items, feed_statuses).
+
+    feed_statuses entries:
+        name, url, status ("ok" | "empty" | "error"), items_found, error
+    """
     cutoff = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
     items = []
+    feed_statuses = []
+
     for feed in feeds:
         url = feed["url"]
         d = feedparser.parse(url)
@@ -160,6 +174,22 @@ def fetch_rss_items(feeds: list[dict]) -> list[dict]:
             or d.feed.get("title")
             or url
         ).strip()
+
+        # Determine feed health
+        http_status = getattr(d, "status", None)
+        error_msg = ""
+        if d.bozo and not d.entries:
+            feed_status = "error"
+            error_msg = str(d.bozo_exception)[:120]
+        elif http_status and http_status >= 400:
+            feed_status = "error"
+            error_msg = f"HTTP {http_status}"
+        elif not d.entries:
+            feed_status = "empty"
+        else:
+            feed_status = "ok"
+
+        items_before = len(items)
         for e in d.entries[:MAX_ITEMS_PER_FEED]:
             title = (e.get("title") or "").strip()
             link = (e.get("link") or "").strip()
@@ -179,10 +209,22 @@ def fetch_rss_items(feeds: list[dict]) -> list[dict]:
                 "published_utc": dt.isoformat() if dt else None,
                 "summary": summary,
             })
+        items_found = len(items) - items_before
+
+        feed_statuses.append({
+            "name": source,
+            "url": url,
+            "status": feed_status,
+            "items_found": items_found,
+            "error": error_msg,
+        })
+        if feed_status != "ok":
+            print(f"  [{feed_status.upper()}] {source}: {error_msg or 'no entries'}")
+
     # dedupe + newest first
     items = list({it["id"]: it for it in items}.values())
     items.sort(key=lambda x: x["published_utc"] or "", reverse=True)
-    return items[:MAX_TOTAL_ITEMS]
+    return items[:MAX_TOTAL_ITEMS], feed_statuses
 
 
 # ---- local prefilter ----
@@ -239,7 +281,7 @@ def call_claude_triage(client: Anthropic, interests: dict, items: list[dict]) ->
         try:
             response = client.messages.create(
                 model=MODEL,
-                max_tokens=4096,
+                max_tokens=MAX_TOKENS,
                 tools=tools,
                 tool_choice={"type": "tool", "name": "generate_digest"},
                 messages=[
@@ -344,8 +386,10 @@ def render_digest_md(result: dict, items_by_id: dict[str, dict]) -> str:
 def main():
     interests = parse_interests_md(read_text("interests.md"))
     feeds = load_feeds("feeds.txt")
-    items = fetch_rss_items(feeds)
-    print(f"Fetched {len(items)} RSS items (pre-filter)")
+    items, feed_statuses = fetch_rss_items(feeds)
+
+    ok_count = sum(1 for f in feed_statuses if f["status"] == "ok")
+    print(f"Fetched {len(items)} RSS items from {ok_count}/{len(feed_statuses)} active feeds (pre-filter)")
 
     today = datetime.now(timezone.utc).date().isoformat()
     if not items:
@@ -361,13 +405,14 @@ def main():
     client = make_anthropic_client()
 
     result = triage_in_batches(client, interests, items, batch_size=BATCH_SIZE)
+    result["feed_status"] = feed_statuses
     md = render_digest_md(result, items_by_id)
 
     with open("digest.md", "w", encoding="utf-8") as f:
         f.write(md)
     print("Wrote digest.md")
 
-    # Export structured data for the new email generator
+    # Export structured data for the email generator
     with open("digest.json", "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
     print("Wrote digest.json")

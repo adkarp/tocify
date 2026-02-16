@@ -45,6 +45,7 @@ jobs:
           SUMMARY_MAX_CHARS: "500"
           PREFILTER_KEEP_TOP: "200"
           BATCH_SIZE: "50"
+          MAX_TOKENS: "8192"
         run: python digest.py
 
 
