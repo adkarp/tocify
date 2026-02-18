@@ -38,18 +38,24 @@ def load_llm_settings(path: str = "settings/llm.json") -> dict:
 SETTINGS = load_llm_settings()
 
 # ---- config (env-tweakable, overrides settings/llm.json) ----
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", SETTINGS["provider"]).lower()
-MODEL = os.getenv("LLM_MODEL", os.getenv("ANTHROPIC_MODEL", SETTINGS["model"]))
-MAX_ITEMS_PER_FEED = int(os.getenv("MAX_ITEMS_PER_FEED", str(SETTINGS["max_items_per_feed"])))
-MAX_TOTAL_ITEMS = int(os.getenv("MAX_TOTAL_ITEMS", str(SETTINGS["max_total_items"])))
-LOOKBACK_DAYS = int(os.getenv("LOOKBACK_DAYS", str(SETTINGS["lookback_days"])))
-INTERESTS_MAX_CHARS = int(os.getenv("INTERESTS_MAX_CHARS", str(SETTINGS["interests_max_chars"])))
-SUMMARY_MAX_CHARS = int(os.getenv("SUMMARY_MAX_CHARS", str(SETTINGS["summary_max_chars"])))
-PREFILTER_KEEP_TOP = int(os.getenv("PREFILTER_KEEP_TOP", str(SETTINGS["prefilter_keep_top"])))
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", str(SETTINGS["batch_size"])))
-MIN_SCORE_READ = float(os.getenv("MIN_SCORE_READ", str(SETTINGS["min_score_read"])))
-MAX_RETURNED = int(os.getenv("MAX_RETURNED", str(SETTINGS["max_returned"])))
-MAX_TOKENS = int(os.getenv("MAX_TOKENS", str(SETTINGS["max_tokens"])))
+def _get_env(key, default, type_cast=str):
+    val = os.getenv(key)
+    if val is None or val.strip() == "":
+        return default
+    return type_cast(val)
+
+LLM_PROVIDER = _get_env("LLM_PROVIDER", SETTINGS["provider"]).lower()
+MODEL = _get_env("LLM_MODEL", os.getenv("ANTHROPIC_MODEL", SETTINGS["model"]))
+MAX_ITEMS_PER_FEED = _get_env("MAX_ITEMS_PER_FEED", SETTINGS["max_items_per_feed"], int)
+MAX_TOTAL_ITEMS = _get_env("MAX_TOTAL_ITEMS", SETTINGS["max_total_items"], int)
+LOOKBACK_DAYS = _get_env("LOOKBACK_DAYS", SETTINGS["lookback_days"], int)
+INTERESTS_MAX_CHARS = _get_env("INTERESTS_MAX_CHARS", SETTINGS["interests_max_chars"], int)
+SUMMARY_MAX_CHARS = _get_env("SUMMARY_MAX_CHARS", SETTINGS["summary_max_chars"], int)
+PREFILTER_KEEP_TOP = _get_env("PREFILTER_KEEP_TOP", SETTINGS["prefilter_keep_top"], int)
+BATCH_SIZE = _get_env("BATCH_SIZE", SETTINGS["batch_size"], int)
+MIN_SCORE_READ = _get_env("MIN_SCORE_READ", SETTINGS["min_score_read"], float)
+MAX_RETURNED = _get_env("MAX_RETURNED", SETTINGS["max_returned"], int)
+MAX_TOKENS = _get_env("MAX_TOKENS", SETTINGS["max_tokens"], int)
 
 SCHEMA = {
     "type": "object",
